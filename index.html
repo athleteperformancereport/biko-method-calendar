@@ -1,389 +1,434 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Biko Method Calendar</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0a0a0f; }
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biko Method Calendar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; background: #0a0a0f; font-family: Georgia, serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px 60px; color: #e8e0d0; position: relative; overflow-x: hidden;
+  }
+  .orb {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+  }
+  .orb1 { top: -15%; left: -8%; width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(100,70,180,0.13) 0%, transparent 70%); }
+  .orb2 { bottom: -12%; right: -8%; width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(190,130,50,0.11) 0%, transparent 70%); }
+  #app { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 1; }
+  header { text-align: center; margin-bottom: 36px; width: 100%; }
+  .byline { font-size: 10px; letter-spacing: 6px; color: #7a6040; text-transform: uppercase; margin-bottom: 10px; }
+  h1 { font-size: clamp(22px,5vw,40px); font-weight: 400; color: #f0e8d8; letter-spacing: 2px; line-height: 1.2; }
+  .subtitle { font-size: 11px; color: #6a5030; letter-spacing: 3px; margin-top: 8px; text-transform: uppercase; }
+  .divider-line { width: 56px; height: 1px; background: linear-gradient(90deg,transparent,#9a7850,transparent); margin: 14px auto 0; }
+
+  .input-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 24px 28px; width: 100%;
+    margin-bottom: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+  .input-label { font-size: 10px; letter-spacing: 4px; color: #7a6040; margin-bottom: 14px; text-transform: uppercase; }
+  .input-row { display: flex; gap: 10px; align-items: center; }
+  input[type="date"] {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(150,118,86,0.45);
+    border-radius: 8px; color: #e8e0d0; font-size: 16px; padding: 10px 14px;
+    outline: none; font-family: monospace; color-scheme: dark;
+  }
+  .btn-today {
+    background: linear-gradient(135deg,rgba(150,118,70,0.28),rgba(110,70,150,0.28));
+    border: 1px solid rgba(150,118,86,0.5); border-radius: 8px; color: #e0c070;
+    font-size: 11px; letter-spacing: 2px; padding: 10px 14px; cursor: pointer;
+    text-transform: uppercase; font-family: Georgia, serif; white-space: nowrap;
+  }
+  .btn-today:hover { background: linear-gradient(135deg,rgba(150,118,70,0.4),rgba(110,70,150,0.4)); }
+
+  .error-box {
+    background: rgba(160,50,50,0.1); border: 1px solid rgba(160,50,50,0.3);
+    border-radius: 12px; padding: 18px 24px; color: #d07070; font-size: 14px;
+    width: 100%; text-align: center; display: none;
+  }
+
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .result-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(160,128,96,0.18);
+    border-radius: 16px; padding: 24px 28px 22px; width: 100%;
+    animation: fadeSlide 0.35s ease; display: none;
+  }
+  .result-card.regular { box-shadow: 0 0 60px rgba(160,128,80,0.12); }
+  .result-card.nothing { box-shadow: 0 0 60px rgba(120,80,200,0.12); }
+
+  .day-banner {
+    text-align: center; margin-bottom: 14px; padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 15px; letter-spacing: 5px; text-transform: uppercase; font-style: italic; color: #9a8050;
+  }
+  .day-banner.nothing-color { color: #9070d0; }
+  .section-label { font-size: 10px; letter-spacing: 4px; color: #7a6040; text-transform: uppercase; margin-bottom: 16px; text-align: center; }
+  .big-display { text-align: center; margin-bottom: 20px; }
+  .big-num { font-size: 72px; line-height: 1; color: #f0e8d8; font-weight: 300; }
+  .big-num.nothing-num { color: #c0a0f0; font-size: 56px; }
+  .big-sub { font-size: 17px; letter-spacing: 4px; color: #a08060; margin-top: 8px; text-transform: uppercase; }
+  .big-sub.nothing-sub { color: #b090e0; }
+  .sol-note { font-size: 11px; color: #806040; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; display: none; }
+  .hr-divider { width: 100%; height: 1px; background: linear-gradient(90deg,transparent,rgba(150,118,80,0.28),transparent); margin-bottom: 20px; }
+  .hr-divider.nothing-hr { background: linear-gradient(90deg,transparent,rgba(120,80,200,0.3),transparent); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cell { background: rgba(255,255,255,0.025); border-radius: 8px; padding: 9px 12px; border: 1px solid rgba(255,255,255,0.05); }
+  .cell-label { font-size: 9px; letter-spacing: 2px; color: #665544; text-transform: uppercase; margin-bottom: 4px; }
+  .cell-value { font-size: 13px; color: #c8b898; }
+
+  .greg-box { margin-top: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.04); }
+  .greg-label { font-size: 9px; letter-spacing: 2px; color: #665544; text-transform: uppercase; margin-bottom: 3px; }
+  .greg-value { font-size: 13px; color: #c8b898; }
+
+  .bank-box { margin-top: 10px; background: rgba(160,128,60,0.06); border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(160,128,60,0.15); }
+  .bank-label { font-size: 9px; letter-spacing: 2px; color: #806040; text-transform: uppercase; margin-bottom: 8px; }
+  .bank-row { display: flex; align-items: center; gap: 10px; }
+  .bank-track { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .bank-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,#a08040,#c0a060); transition: width 0.4s ease; }
+  .bank-count { font-size: 12px; color: #c0a060; white-space: nowrap; }
+  .bank-note { font-size: 11px; color: #604030; margin-top: 6px; }
+  .bank-highlight { color: #d0a040; margin-left: 6px; }
+
+  .nothing-desc { margin-top: 14px; text-align: center; color: #9070b0; font-size: 13px; line-height: 1.8; }
+  .nothing-sub { font-size: 12px; color: #7060a0; }
+
+  .info-card { margin-top: 16px; width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px 24px; }
+  .info-card:first-of-type { margin-top: 28px; }
+  .info-title { font-size: 10px; letter-spacing: 4px; color: #504030; text-transform: uppercase; margin-bottom: 10px; }
+
+  .weekday-desc { font-size: 11px; color: #605040; margin-bottom: 14px; text-align: center; line-height: 1.6; }
+  .weekday-desc span { color: #c0a060; }
+  .weekday-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
+  .wd-cell { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 7px; padding: 8px 4px; text-align: center; transition: background 0.2s, border-color 0.2s; }
+  .wd-cell.active { background: rgba(160,128,80,0.18); border-color: rgba(160,128,80,0.55); }
+  .wd-num { font-size: 9px; color: #504030; margin-bottom: 4px; }
+  .wd-name { font-size: 11px; color: #806050; }
+  .wd-cell.active .wd-name { color: #d0b870; font-weight: bold; }
+  .wd-note { margin-top: 8px; font-size: 11px; color: #504030; text-align: center; }
+
+  .month-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+  .month-cell { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 7px; padding: 7px 8px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s, border-color 0.2s; }
+  .month-cell.active { background: rgba(160,128,80,0.12); border-color: rgba(160,128,80,0.4); }
+  .month-cell.sol { background: rgba(200,160,40,0.08); border-color: rgba(200,160,40,0.3); }
+  .month-idx { font-size: 10px; color: #605040; }
+  .month-name { font-size: 12px; color: #a09070; }
+  .month-cell.active .month-name { color: #d0b880; }
+  .month-cell.sol .month-name { color: #c8a040; font-style: italic; }
+  .sol-footer { margin-top: 10px; font-size: 11px; color: #504030; text-align: center; }
+  .sol-footer span { color: #c8a040; }
+
+  .how-text { font-size: 13px; color: #806050; line-height: 1.9; }
+  .how-text span { color: #c0a060; }
+  .how-text .nt-span { color: #c0b0e0; }
+  .stat-grid { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; font-size: 12px; }
+  .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 6px; }
+  .stat-key { color: #706050; }
+  .stat-val { color: #c0b090; }
+
+  footer { margin-top: 28px; font-size: 10px; color: #2a1a0a; letter-spacing: 3px; text-transform: uppercase; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+<div id="app">
+  <header>
+    <div class="byline">Dr. Konstantine Bisbikos, PhD</div>
+    <h1>Biko Method Calendar</h1>
+    <div class="subtitle">13 Months · 28 Days · Day 1 Always Monday</div>
+    <div class="divider-line"></div>
+  </header>
 
-    function isLeapYear(y) {
-      return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  <div class="input-card">
+    <div class="input-label">Enter Gregorian Date</div>
+    <div class="input-row">
+      <input type="date" id="dateInput" min="2024-04-01">
+      <button class="btn-today" onclick="setToday()">Today</button>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox">Date is before the Biko Method Calendar start (April 1, 2024)</div>
+
+  <!-- Regular day card -->
+  <div class="result-card regular" id="regularCard">
+    <div class="day-banner" id="regWeekday"></div>
+    <div class="section-label" id="regYearLabel"></div>
+    <div class="big-display">
+      <div class="big-num" id="regDay"></div>
+      <div class="big-sub" id="regMonth"></div>
+      <div class="sol-note" id="solNote">IFC Sun Month · between June &amp; July</div>
+    </div>
+    <div class="hr-divider"></div>
+    <div class="two-col">
+      <div class="cell"><div class="cell-label">Month</div><div class="cell-value" id="cMonth"></div></div>
+      <div class="cell"><div class="cell-label">Month Name</div><div class="cell-value" id="cMonthName"></div></div>
+      <div class="cell"><div class="cell-label">Day of Month</div><div class="cell-value" id="cDayOfMonth"></div></div>
+      <div class="cell"><div class="cell-label">Day of Year</div><div class="cell-value" id="cDayOfYear"></div></div>
+      <div class="cell"><div class="cell-label">Day of Week</div><div class="cell-value" id="cDayOfWeek"></div></div>
+      <div class="cell"><div class="cell-label">Biko Year</div><div class="cell-value" id="cBikoYear"></div></div>
+    </div>
+    <div class="greg-box">
+      <div class="greg-label">Gregorian Date</div>
+      <div class="greg-value" id="gregValue"></div>
+    </div>
+    <div class="bank-box">
+      <div class="bank-label">Nothing Days Banked</div>
+      <div class="bank-row">
+        <div class="bank-track"><div class="bank-fill" id="bankFill"></div></div>
+        <div class="bank-count" id="bankCount"></div>
+      </div>
+      <div class="bank-note" id="bankNote"></div>
+    </div>
+  </div>
+
+  <!-- Nothing Timeline card -->
+  <div class="result-card nothing" id="nothingCard">
+    <div class="day-banner nothing-color" id="ntWeekday"></div>
+    <div class="section-label">Biko Method Calendar · Nothing Timeline</div>
+    <div class="big-display">
+      <div class="big-num nothing-num">✦</div>
+      <div class="big-sub nothing-sub">Nothing Timeline</div>
+    </div>
+    <div class="hr-divider nothing-hr"></div>
+    <div class="two-col">
+      <div class="cell"><div class="cell-label">Day of Week</div><div class="cell-value" id="ntDayOfWeek"></div></div>
+      <div class="cell"><div class="cell-label">Timeline Day</div><div class="cell-value" id="ntTimelineDay"></div></div>
+      <div class="cell"><div class="cell-label">Following Year</div><div class="cell-value" id="ntFollowYear"></div></div>
+      <div class="cell"><div class="cell-label">Gregorian Date</div><div class="cell-value" id="ntGregDate"></div></div>
+    </div>
+    <div class="nothing-desc">
+      This period exists outside the month and week structure.<br>
+      <span class="nothing-sub" id="ntDesc"></span>
+    </div>
+  </div>
+
+  <!-- Weekday anchor -->
+  <div class="info-card" style="margin-top:28px">
+    <div class="info-title">Permanent Weekday Anchor</div>
+    <div class="weekday-desc">364 days = 52 exact weeks. Day 1 is <span>always Monday</span> in every month of every year.</div>
+    <div class="weekday-grid" id="weekdayGrid"></div>
+    <div class="wd-note">Days 8 · 15 · 22 = Monday &nbsp;·&nbsp; Days 7 · 14 · 21 · 28 = Sunday &nbsp;·&nbsp; Always.</div>
+  </div>
+
+  <!-- IFC months -->
+  <div class="info-card">
+    <div class="info-title">IFC Month Names · Biko Calendar Order</div>
+    <div class="month-grid" id="monthGrid"></div>
+    <div class="sol-footer"><span>Sol</span> — IFC intercalary sun month, between June &amp; July</div>
+  </div>
+
+  <!-- How it works -->
+  <div class="info-card">
+    <div class="info-title">How Nothing Days Work</div>
+    <div class="how-text">
+      Each year earns <span>1 or 2 Nothing Days</span> based on whether a Gregorian leap day falls within that year's 364-day window. These days are <span>banked silently</span> — never taken individually. When the bank reaches a multiple of 7, a <span class="nt-span">Nothing Timeline</span> is released at the end of that year. Because it is always a multiple of 7, it occupies complete weeks and the very next day is always <span>Monday</span> — Day 1 of the new year, with zero drift.
+    </div>
+    <div class="stat-grid">
+      <div class="stat-row"><span class="stat-key">Origin</span><span class="stat-val">Apr 1, 2024 (Mon)</span></div>
+      <div class="stat-row"><span class="stat-key">Months per year</span><span class="stat-val">13</span></div>
+      <div class="stat-row"><span class="stat-key">Days per month</span><span class="stat-val">28</span></div>
+      <div class="stat-row"><span class="stat-key">Regular days / year</span><span class="stat-val">364</span></div>
+      <div class="stat-row"><span class="stat-key">Nothing Days</span><span class="stat-val">1 or 2 (banked)</span></div>
+      <div class="stat-row"><span class="stat-key">Nothing Timeline</span><span class="stat-val">Multiple of 7 days</span></div>
+    </div>
+  </div>
+
+  <footer>Biko Method Calendar · Origin Monday April 1, 2024</footer>
+</div>
+
+<script>
+const MONTH_NAMES = ["April","May","June","Sol","July","August","September","October","November","December","January","February","March"];
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function toUTC(y,m,d){ return Date.UTC(y,m,d); }
+function daysBetween(u1,u2){ return Math.round((u2-u1)/86400000); }
+function isLeapYear(y){ return (y%4===0&&y%100!==0)||y%400===0; }
+
+function nothingDaysForYear(startUTC){
+  const sy = new Date(startUTC).getUTCFullYear();
+  for(const ly of [sy,sy+1]){
+    if(!isLeapYear(ly)) continue;
+    const feb29 = toUTC(ly,1,29);
+    if(feb29>=startUTC && feb29<=startUTC+363*86400000) return 2;
+  }
+  return 1;
+}
+
+const ORIGIN = toUTC(2024,3,1);
+
+function buildSchedule(n=80){
+  const entries=[];
+  let banked=0, gregOffset=0;
+  for(let yr=1;yr<=n;yr++){
+    const gregStart = ORIGIN+((yr-1)*364+gregOffset)*86400000;
+    const gregEnd = gregStart+364*86400000;
+    const nd = nothingDaysForYear(gregStart);
+    banked+=nd;
+    const entry={year:yr,nothingDaysEarned:nd,bankedAfter:banked,gregStart,gregEnd,nothingTimeline:null};
+    if(banked%7===0){
+      entry.nothingTimeline={start:gregEnd,len:banked,endExclusive:gregEnd+banked*86400000};
+      gregOffset+=banked; banked=0;
     }
-    function toUTC(y, m, d) { return Date.UTC(y, m, d); }
-    function daysBetween(u1, u2) { return Math.round((u2 - u1) / 86400000); }
+    entries.push(entry);
+  }
+  return entries;
+}
 
-    function nothingDaysForYear(startUTC) {
-      const sy = new Date(startUTC).getUTCFullYear();
-      for (const ly of [sy, sy + 1]) {
-        if (!isLeapYear(ly)) continue;
-        const feb29 = toUTC(ly, 1, 29);
-        if (feb29 >= startUTC && feb29 <= startUTC + 363 * 86400000) return 2;
-      }
-      return 1;
+const SCHEDULE = buildSchedule(80);
+
+function convertToCustom(date){
+  const inputUTC = toUTC(date.getFullYear(),date.getMonth(),date.getDate());
+  if(inputUTC<ORIGIN) return null;
+  const weekday = WEEKDAYS[date.getDay()];
+  for(const e of SCHEDULE){
+    if(inputUTC>=e.gregStart && inputUTC<e.gregEnd){
+      const dayInYear = daysBetween(e.gregStart,inputUTC);
+      return {
+        type:"regular", year:e.year,
+        month:Math.floor(dayInYear/28)+1, day:(dayInYear%28)+1,
+        dayOfYear:dayInYear+1, weekday,
+        bankedAfter:e.bankedAfter,
+        hasNothingTimeline:!!e.nothingTimeline,
+        nothingTimelineLen:e.nothingTimeline?.len??null,
+      };
     }
-
-    const ORIGIN = toUTC(2024, 3, 1);
-
-    function buildSchedule(numYears = 80) {
-      const entries = [];
-      let banked = 0;
-      let gregOffset = 0;
-      for (let yr = 1; yr <= numYears; yr++) {
-        const gregStart = ORIGIN + ((yr - 1) * 364 + gregOffset) * 86400000;
-        const gregEnd = gregStart + 364 * 86400000;
-        const nd = nothingDaysForYear(gregStart);
-        banked += nd;
-        const entry = { year: yr, nothingDaysEarned: nd, bankedAfter: banked, gregStart, gregEnd, nothingTimeline: null };
-        if (banked % 7 === 0) {
-          entry.nothingTimeline = { start: gregEnd, len: banked, endExclusive: gregEnd + banked * 86400000 };
-          gregOffset += banked;
-          banked = 0;
-        }
-        entries.push(entry);
-      }
-      return entries;
+    if(e.nothingTimeline){
+      const{start,len,endExclusive}=e.nothingTimeline;
+      if(inputUTC>=start && inputUTC<endExclusive)
+        return{type:"nothing-timeline",year:e.year,day:daysBetween(start,inputUTC)+1,total:len,weekday};
     }
+  }
+  return null;
+}
 
-    const SCHEDULE = buildSchedule(80);
+function formatGregorian(d){
+  return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
 
-    function convertToCustom(gregorianDate) {
-      const inputUTC = toUTC(gregorianDate.getFullYear(), gregorianDate.getMonth(), gregorianDate.getDate());
-      if (inputUTC < ORIGIN) return null;
-      const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      const weekday = WEEKDAYS[gregorianDate.getDay()];
-      for (const e of SCHEDULE) {
-        if (inputUTC >= e.gregStart && inputUTC < e.gregEnd) {
-          const dayInYear = daysBetween(e.gregStart, inputUTC);
-          const dayOfYear = dayInYear + 1;
-          return {
-            type: "regular", year: e.year,
-            month: Math.floor(dayInYear / 28) + 1,
-            day: (dayInYear % 28) + 1,
-            dayOfYear, weekday,
-            nothingDaysEarned: e.nothingDaysEarned,
-            bankedAfter: e.bankedAfter,
-            hasNothingTimeline: !!e.nothingTimeline,
-            nothingTimelineLen: e.nothingTimeline?.len ?? null,
-          };
-        }
-        if (e.nothingTimeline) {
-          const { start, len, endExclusive } = e.nothingTimeline;
-          if (inputUTC >= start && inputUTC < endExclusive) {
-            return { type: "nothing-timeline", year: e.year, day: daysBetween(start, inputUTC) + 1, total: len, weekday };
-          }
-        }
-      }
-      return null;
-    }
+// Build static grids
+(function buildWeekdayGrid(){
+  const g = document.getElementById("weekdayGrid");
+  [{d:1,w:"Mon"},{d:2,w:"Tue"},{d:3,w:"Wed"},{d:4,w:"Thu"},{d:5,w:"Fri"},{d:6,w:"Sat"},{d:7,w:"Sun"}]
+    .forEach(({d,w})=>{
+      const el = document.createElement("div");
+      el.className = "wd-cell"; el.dataset.day = d;
+      el.innerHTML = `<div class="wd-num">Day ${d}</div><div class="wd-name">${w}</div>`;
+      g.appendChild(el);
+    });
+})();
 
-    const MONTH_NAMES = ["April","May","June","Sol","July","August","September","October","November","December","January","February","March"];
+(function buildMonthGrid(){
+  const g = document.getElementById("monthGrid");
+  MONTH_NAMES.forEach((name,i)=>{
+    const el = document.createElement("div");
+    el.className = "month-cell" + (name==="Sol"?" sol":"");
+    el.dataset.month = i+1;
+    el.innerHTML = `<span class="month-idx">${i+1}</span><span class="month-name">${name}</span>`;
+    g.appendChild(el);
+  });
+})();
 
-    function formatGregorian(d) {
-      return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-    }
+function updateWeekdayHighlight(day){
+  document.querySelectorAll(".wd-cell").forEach(el=>{
+    const d = +el.dataset.day;
+    const active = day!=null && (day%7===0 ? d===7 : day%7===d);
+    el.classList.toggle("active", active);
+  });
+}
 
-    function DayBanner({ day, color = "#9a8050" }) {
-      return (
-        <div style={{ textAlign: "center", marginBottom: 14, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-          <span style={{ fontSize: 15, letterSpacing: 5, textTransform: "uppercase", color, fontStyle: "italic" }}>{day}</span>
-        </div>
-      );
-    }
-    function ResultCard({ children, glow = "160,128,80" }) {
-      return (
-        <div style={{
-          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(160,128,96,0.18)",
-          borderRadius: 16, padding: "24px 28px 22px", width: "100%", maxWidth: 480,
-          boxShadow: `0 0 60px rgba(${glow},0.12)`, animation: "fadeSlide 0.35s ease",
-        }}>
-          <style>{`@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-          {children}
-        </div>
-      );
-    }
-    function SectionLabel({ children }) {
-      return (
-        <div style={{ fontSize: 10, letterSpacing: 4, color: "#7a6040", textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
-          {children}
-        </div>
-      );
-    }
-    function BigDisplay({ children }) { return <div style={{ textAlign: "center", marginBottom: 20 }}>{children}</div>; }
-    function BigNum({ children, style = {} }) {
-      return <div style={{ fontSize: 72, lineHeight: 1, color: "#f0e8d8", fontWeight: 300, ...style }}>{children}</div>;
-    }
-    function BigSub({ children, style = {} }) {
-      return <div style={{ fontSize: 17, letterSpacing: 4, color: "#a08060", marginTop: 8, textTransform: "uppercase", ...style }}>{children}</div>;
-    }
-    function Divider({ color = "rgba(150,118,80,0.28)" }) {
-      return <div style={{ width: "100%", height: 1, background: `linear-gradient(90deg,transparent,${color},transparent)`, marginBottom: 20 }} />;
-    }
-    function TwoCol({ children }) {
-      return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{children}</div>;
-    }
-    function Cell({ label, value }) {
-      return (
-        <div style={{ background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: "9px 12px", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ fontSize: 9, letterSpacing: 2, color: "#665544", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 13, color: "#c8b898" }}>{value}</div>
-        </div>
-      );
-    }
+function updateMonthHighlight(month){
+  document.querySelectorAll(".month-cell").forEach(el=>{
+    el.classList.toggle("active", month!=null && +el.dataset.month===month && !el.classList.contains("sol") || month!=null && +el.dataset.month===month);
+    if(el.classList.contains("sol")) el.classList.remove("active");
+  });
+  if(month!=null){
+    document.querySelectorAll(".month-cell").forEach(el=>{
+      if(+el.dataset.month===month) el.classList.add("active");
+    });
+  }
+}
 
-    function BikoCalendar() {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const [inputDate, setInputDate] = useState(todayStr);
-      const [result, setResult] = useState(null);
-      const [animKey, setAnimKey] = useState(0);
-      const [displayDate, setDisplayDate] = useState("");
+let animTimeout = null;
+function reAnimate(card){
+  card.style.animation="none";
+  card.offsetHeight; // reflow
+  card.style.animation="fadeSlide 0.35s ease";
+}
 
-      useEffect(() => { calculate(todayStr); }, []);
+function calculate(dateStr){
+  if(!dateStr) return;
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const date = new Date(y,m-1,d);
+  const result = convertToCustom(date);
+  const displayDate = formatGregorian(date);
 
-      function calculate(dateStr) {
-        if (!dateStr) return;
-        const [y, m, d] = dateStr.split("-").map(Number);
-        const date = new Date(y, m - 1, d);
-        setResult(convertToCustom(date));
-        setDisplayDate(formatGregorian(date));
-        setAnimKey(k => k + 1);
-      }
+  const errBox = document.getElementById("errorBox");
+  const regCard = document.getElementById("regularCard");
+  const ntCard = document.getElementById("nothingCard");
 
-      function handleChange(e) { setInputDate(e.target.value); calculate(e.target.value); }
-      function setToday() { const s = new Date().toISOString().split("T")[0]; setInputDate(s); calculate(s); }
+  errBox.style.display="none";
+  regCard.style.display="none";
+  ntCard.style.display="none";
+  updateWeekdayHighlight(null);
+  updateMonthHighlight(null);
 
-      const monthName = result?.type === "regular" ? MONTH_NAMES[result.month - 1] : null;
+  if(result===null){
+    errBox.style.display="block"; return;
+  }
 
-      return (
-        <div style={{
-          minHeight: "100vh", background: "#0a0a0f", fontFamily: "Georgia, serif",
-          display: "flex", flexDirection: "column", alignItems: "center",
-          padding: "40px 20px 60px", color: "#e8e0d0", position: "relative", overflow: "hidden",
-        }}>
-          {[{ top: "-15%", left: "-8%", size: 520, c: "rgba(100,70,180,0.13)" },
-            { bottom: "-12%", right: "-8%", size: 420, c: "rgba(190,130,50,0.11)" }].map((o, i) => (
-            <div key={i} style={{
-              position: "fixed", top: o.top, bottom: o.bottom, left: o.left, right: o.right,
-              width: o.size, height: o.size,
-              background: `radial-gradient(circle, ${o.c} 0%, transparent 70%)`, pointerEvents: "none",
-            }} />
-          ))}
+  if(result.type==="regular"){
+    const mn = MONTH_NAMES[result.month-1];
+    document.getElementById("regWeekday").textContent = result.weekday;
+    document.getElementById("regYearLabel").textContent = `Biko Method Calendar · Year ${result.year}`;
+    document.getElementById("regDay").textContent = result.day;
+    document.getElementById("regMonth").textContent = mn;
+    document.getElementById("solNote").style.display = mn==="Sol"?"block":"none";
+    document.getElementById("cMonth").textContent = `${result.month} of 13`;
+    document.getElementById("cMonthName").textContent = mn;
+    document.getElementById("cDayOfMonth").textContent = `${result.day} of 28`;
+    document.getElementById("cDayOfYear").textContent = `${result.dayOfYear} of 364`;
+    document.getElementById("cDayOfWeek").textContent = result.weekday;
+    document.getElementById("cBikoYear").textContent = result.year;
+    document.getElementById("gregValue").textContent = displayDate;
+    const banked = result.bankedAfter%7===0 ? 7 : result.bankedAfter%7;
+    document.getElementById("bankFill").style.width = `${(banked/7)*100}%`;
+    document.getElementById("bankCount").innerHTML = `${banked} / 7${result.hasNothingTimeline?`<span class="bank-highlight">→ Nothing Timeline this year!</span>`:""}`;
+    document.getElementById("bankNote").textContent = result.hasNothingTimeline
+      ? `Year ${result.year} ends with a ${result.nothingTimelineLen}-day Nothing Timeline.`
+      : `${7-banked} more day${7-banked===1?"":"s"} until the next Nothing Timeline.`;
+    regCard.style.display="block";
+    reAnimate(regCard);
+    updateWeekdayHighlight(result.day);
+    updateMonthHighlight(result.month);
+  } else {
+    document.getElementById("ntWeekday").textContent = result.weekday;
+    document.getElementById("ntDayOfWeek").textContent = result.weekday;
+    document.getElementById("ntTimelineDay").textContent = `${result.day} of ${result.total}`;
+    document.getElementById("ntFollowYear").textContent = `Year ${result.year+1}`;
+    document.getElementById("ntGregDate").textContent = displayDate;
+    document.getElementById("ntDesc").textContent = `${result.total} banked Nothing Days released together — a multiple of 7 — so Year ${result.year+1} begins on Monday with zero drift.`;
+    ntCard.style.display="block";
+    reAnimate(ntCard);
+  }
+}
 
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <div style={{ fontSize: 10, letterSpacing: 6, color: "#7a6040", textTransform: "uppercase", marginBottom: 10 }}>
-              Dr. Konstantine Bisbikos, PhD
-            </div>
-            <h1 style={{ fontSize: "clamp(22px,5vw,40px)", fontWeight: 400, margin: 0, color: "#f0e8d8", letterSpacing: 2, lineHeight: 1.2 }}>
-              Biko Method Calendar
-            </h1>
-            <div style={{ fontSize: 11, color: "#6a5030", letterSpacing: 3, marginTop: 8, textTransform: "uppercase" }}>
-              13 Months · 28 Days · Day 1 Always Monday
-            </div>
-            <div style={{ width: 56, height: 1, background: "linear-gradient(90deg,transparent,#9a7850,transparent)", margin: "14px auto 0" }} />
-          </div>
+function setToday(){
+  const s = new Date().toISOString().split("T")[0];
+  document.getElementById("dateInput").value = s;
+  calculate(s);
+}
 
-          <div style={{
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: 16, padding: "24px 28px", width: "100%", maxWidth: 480,
-            marginBottom: 24, boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-          }}>
-            <div style={{ fontSize: 10, letterSpacing: 4, color: "#7a6040", marginBottom: 14, textTransform: "uppercase" }}>
-              Enter Gregorian Date
-            </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <input type="date" value={inputDate} onChange={handleChange} min="2024-04-01"
-                style={{
-                  flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(150,118,86,0.45)",
-                  borderRadius: 8, color: "#e8e0d0", fontSize: 16, padding: "10px 14px",
-                  outline: "none", fontFamily: "monospace", colorScheme: "dark",
-                }}
-              />
-              <button onClick={setToday} style={{
-                background: "linear-gradient(135deg,rgba(150,118,70,0.28),rgba(110,70,150,0.28))",
-                border: "1px solid rgba(150,118,86,0.5)", borderRadius: 8, color: "#e0c070",
-                fontSize: 11, letterSpacing: 2, padding: "10px 14px", cursor: "pointer",
-                textTransform: "uppercase", fontFamily: "Georgia, serif", whiteSpace: "nowrap",
-              }}>Today</button>
-            </div>
-          </div>
+document.getElementById("dateInput").addEventListener("change", e => calculate(e.target.value));
 
-          {result === null && (
-            <div style={{
-              background: "rgba(160,50,50,0.1)", border: "1px solid rgba(160,50,50,0.3)",
-              borderRadius: 12, padding: "18px 24px", color: "#d07070", fontSize: 14,
-              maxWidth: 480, width: "100%", textAlign: "center",
-            }}>
-              Date is before the Biko Method Calendar start (April 1, 2024)
-            </div>
-          )}
-
-          {result?.type === "regular" && (
-            <ResultCard key={animKey} glow="160,128,80">
-              <DayBanner day={result.weekday} />
-              <SectionLabel>Biko Method Calendar · Year {result.year}</SectionLabel>
-              <BigDisplay>
-                <BigNum>{result.day}</BigNum>
-                <BigSub>{monthName}</BigSub>
-                {monthName === "Sol" && (
-                  <div style={{ fontSize: 11, color: "#806040", letterSpacing: 2, marginTop: 6, textTransform: "uppercase" }}>
-                    IFC Sun Month · between June &amp; July
-                  </div>
-                )}
-              </BigDisplay>
-              <Divider />
-              <TwoCol>
-                <Cell label="Month" value={`${result.month} of 13`} />
-                <Cell label="Month Name" value={monthName} />
-                <Cell label="Day of Month" value={`${result.day} of 28`} />
-                <Cell label="Day of Year" value={`${result.dayOfYear} of 364`} />
-                <Cell label="Day of Week" value={result.weekday} />
-                <Cell label="Biko Year" value={result.year} />
-              </TwoCol>
-              <div style={{ marginTop: 10, background: "rgba(255,255,255,0.02)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.04)" }}>
-                <div style={{ fontSize: 9, letterSpacing: 2, color: "#665544", textTransform: "uppercase", marginBottom: 3 }}>Gregorian Date</div>
-                <div style={{ fontSize: 13, color: "#c8b898" }}>{displayDate}</div>
-              </div>
-              <div style={{ marginTop: 10, background: "rgba(160,128,60,0.06)", borderRadius: 8, padding: "12px 14px", border: "1px solid rgba(160,128,60,0.15)" }}>
-                <div style={{ fontSize: 9, letterSpacing: 2, color: "#806040", textTransform: "uppercase", marginBottom: 8 }}>Nothing Days Banked</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%", borderRadius: 2,
-                      width: `${((result.bankedAfter % 7 === 0 ? 7 : result.bankedAfter % 7) / 7) * 100}%`,
-                      background: "linear-gradient(90deg,#a08040,#c0a060)", transition: "width 0.4s ease",
-                    }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: "#c0a060", whiteSpace: "nowrap" }}>
-                    {result.bankedAfter % 7 === 0 ? 7 : result.bankedAfter % 7} / 7
-                    {result.hasNothingTimeline && <span style={{ color: "#d0a040", marginLeft: 6 }}>→ Nothing Timeline this year!</span>}
-                  </div>
-                </div>
-                <div style={{ fontSize: 11, color: "#604030", marginTop: 6 }}>
-                  {result.hasNothingTimeline
-                    ? `Year ${result.year} ends with a ${result.nothingTimelineLen}-day Nothing Timeline.`
-                    : `${7 - (result.bankedAfter % 7)} more day${7 - (result.bankedAfter % 7) === 1 ? "" : "s"} until the next Nothing Timeline.`}
-                </div>
-              </div>
-            </ResultCard>
-          )}
-
-          {result?.type === "nothing-timeline" && (
-            <ResultCard key={animKey} glow="120,80,200">
-              <DayBanner day={result.weekday} color="#9070d0" />
-              <SectionLabel>Biko Method Calendar · Nothing Timeline</SectionLabel>
-              <BigDisplay>
-                <BigNum style={{ color: "#c0a0f0", fontSize: 56 }}>✦</BigNum>
-                <BigSub style={{ color: "#b090e0" }}>Nothing Timeline</BigSub>
-              </BigDisplay>
-              <Divider color="rgba(120,80,200,0.3)" />
-              <TwoCol>
-                <Cell label="Day of Week" value={result.weekday} />
-                <Cell label="Timeline Day" value={`${result.day} of ${result.total}`} />
-                <Cell label="Following Year" value={`Year ${result.year + 1}`} />
-                <Cell label="Gregorian Date" value={displayDate} />
-              </TwoCol>
-              <div style={{ marginTop: 14, textAlign: "center", color: "#9070b0", fontSize: 13, lineHeight: 1.8 }}>
-                This period exists outside the month and week structure.
-                <br />
-                <span style={{ fontSize: 12, color: "#7060a0" }}>
-                  {result.total} banked Nothing Days released together — a multiple of 7 —
-                  so Year {result.year + 1} begins on Monday with zero drift.
-                </span>
-              </div>
-            </ResultCard>
-          )}
-
-          <div style={{ marginTop: 28, maxWidth: 480, width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: 4, color: "#504030", textTransform: "uppercase", marginBottom: 10 }}>Permanent Weekday Anchor</div>
-            <div style={{ fontSize: 11, color: "#605040", marginBottom: 14, textAlign: "center", lineHeight: 1.6 }}>
-              364 days = 52 exact weeks. Day 1 is <span style={{ color: "#c0a060" }}>always Monday</span> in every month of every year.
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 6 }}>
-              {[{d:1,w:"Mon"},{d:2,w:"Tue"},{d:3,w:"Wed"},{d:4,w:"Thu"},{d:5,w:"Fri"},{d:6,w:"Sat"},{d:7,w:"Sun"}].map(({d,w}) => {
-                const hi = result?.type === "regular" && (result.day % 7 === 0 ? d === 7 : result.day % 7 === d);
-                return (
-                  <div key={d} style={{
-                    background: hi ? "rgba(160,128,80,0.18)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${hi ? "rgba(160,128,80,0.55)" : "rgba(255,255,255,0.05)"}`,
-                    borderRadius: 7, padding: "8px 4px", textAlign: "center",
-                  }}>
-                    <div style={{ fontSize: 9, color: "#504030", marginBottom: 4 }}>Day {d}</div>
-                    <div style={{ fontSize: 11, color: hi ? "#d0b870" : "#806050", fontWeight: hi ? "bold" : "normal" }}>{w}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: 8, fontSize: 11, color: "#504030", textAlign: "center" }}>
-              Days 8 · 15 · 22 = Monday &nbsp;·&nbsp; Days 7 · 14 · 21 · 28 = Sunday &nbsp;·&nbsp; Always.
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16, maxWidth: 480, width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: 4, color: "#504030", textTransform: "uppercase", marginBottom: 14 }}>IFC Month Names · Biko Calendar Order</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-              {MONTH_NAMES.map((name, i) => {
-                const active = result?.type === "regular" && result.month === i + 1;
-                const isSol = name === "Sol";
-                return (
-                  <div key={i} style={{
-                    background: isSol ? "rgba(200,160,40,0.08)" : active ? "rgba(160,128,80,0.12)" : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${isSol ? "rgba(200,160,40,0.3)" : active ? "rgba(160,128,80,0.4)" : "rgba(255,255,255,0.04)"}`,
-                    borderRadius: 7, padding: "7px 8px", display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}>
-                    <span style={{ fontSize: 10, color: "#605040" }}>{i + 1}</span>
-                    <span style={{ fontSize: 12, fontStyle: isSol ? "italic" : "normal", color: isSol ? "#c8a040" : active ? "#d0b880" : "#a09070" }}>{name}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: 10, fontSize: 11, color: "#504030", textAlign: "center" }}>
-              <span style={{ color: "#c8a040" }}>Sol</span> — IFC intercalary sun month, between June &amp; July
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16, maxWidth: 480, width: "100%", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: 4, color: "#504030", textTransform: "uppercase", marginBottom: 14 }}>How Nothing Days Work</div>
-            <div style={{ fontSize: 13, color: "#806050", lineHeight: 1.9 }}>
-              Each year earns <span style={{ color: "#c0a060" }}>1 or 2 Nothing Days</span> based on whether a Gregorian leap day falls within that year's 364-day window. These days are <span style={{ color: "#c0a060" }}>banked silently</span> — never taken individually. When the bank reaches a multiple of 7, a <span style={{ color: "#c0b0e0" }}>Nothing Timeline</span> is released at the end of that year. Because it is always a multiple of 7, it occupies complete weeks and the very next day is always <span style={{ color: "#c0a060" }}>Monday</span> — Day 1 of the new year, with zero drift.
-            </div>
-            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 20px", fontSize: 12 }}>
-              {[
-                ["Origin","Apr 1, 2024 (Mon)"],
-                ["Months per year","13"],
-                ["Days per month","28"],
-                ["Regular days / year","364"],
-                ["Nothing Days","1 or 2 (banked)"],
-                ["Nothing Timeline","Multiple of 7 days"],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: 6 }}>
-                  <span style={{ color: "#706050" }}>{k}</span>
-                  <span style={{ color: "#c0b090" }}>{v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginTop: 28, fontSize: 10, color: "#2a1a0a", letterSpacing: 3, textTransform: "uppercase" }}>
-            Biko Method Calendar · Origin Monday April 1, 2024
-          </div>
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<BikoCalendar />);
-  </script>
+// Init
+setToday();
+</script>
 </body>
 </html>
